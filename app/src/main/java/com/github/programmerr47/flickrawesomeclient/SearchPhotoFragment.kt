@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.support.design.widget.AppBarLayout
 import android.support.v4.app.Fragment
 import android.support.v7.widget.GridLayoutManager
+import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
 import android.util.Log
@@ -18,6 +19,7 @@ import com.github.programmerr47.flickrawesomeclient.util.setOnImeOptionsClickLis
 import com.github.programmerr47.flickrawesomeclient.util.setStateListElevationAnimator
 import com.github.programmerr47.flickrawesomeclient.util.sugar.textWatcher
 import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
+import io.reactivex.disposables.Disposable
 
 class SearchPhotoFragment : Fragment() {
     private val flickrSearcher: FlickrSearcher by lazy { FlickrApplication.flickrSearcher }
@@ -26,6 +28,8 @@ class SearchPhotoFragment : Fragment() {
 
     private var searchView: EditText? = null
     private var listAdapter: PhotoListAdapter? = null
+
+    private var searchDisposable: Disposable? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_search_photo, container, false)
@@ -47,6 +51,26 @@ class SearchPhotoFragment : Fragment() {
             findViewById<RecyclerView>(R.id.rv_list).run {
                 layoutManager = GridLayoutManager(context, 3)
                 adapter = PhotoListAdapter().also { listAdapter = it }
+                addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                    override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                        val visibleCount = recyclerView.layoutManager.childCount
+                        val totalCount = recyclerView.layoutManager.itemCount
+                        val firstVisiblePos = (recyclerView.layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition() ?: 0
+
+                        Log.v("FUCK", "visible = $visibleCount, total = $totalCount, firstPos = $firstVisiblePos")
+                        if (visibleCount + firstVisiblePos >= totalCount && searchDisposable?.isDisposed != false) {
+                            searchDisposable = flickrSearcher.searchMorePhotos(searchViewModel.searchText).subscribe(
+                                    {
+                                        Log.v("FUCK", "onSuccess $it")
+                                        searchViewModel.searchResult = it
+                                        listAdapter?.update(it.list)
+                                    },
+                                    { Log.v("FUCK", "onError $it") },
+                                    { Log.v("FUCK", "onFinish") }
+                            )
+                        }
+                    }
+                })
             }
         }
     }
@@ -63,7 +87,7 @@ class SearchPhotoFragment : Fragment() {
         super.onDestroyView()
     }
 
-    private fun applySearch() = applySearch(searchView?.text?.toString() ?: "")
+    private fun applySearch() = applySearch(searchViewModel.searchText)
 
     private fun applySearch(text: String) {
         hideKeyboard()

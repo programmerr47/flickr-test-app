@@ -6,5 +6,6 @@ import retrofit2.http.Query
 
 interface FlickrApi {
     @GET("?method=flickr.photos.search&per_page=20")
-    fun searchPhotos(@Query("text") searchText: String): Observable<PhotoListResponse>
+    fun searchPhotos(@Query("text") searchText: String,
+                     @Query("page") page: Int = 1): Observable<PhotoListResponse>
 }

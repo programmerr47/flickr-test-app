@@ -28,6 +28,14 @@ data class PhotoList(
         @SerializedName("photo") val list: List<Photo>
 ) {
     fun canTakeMore() = page < pages
+
+    operator fun plus(other: PhotoList) = PhotoList(
+            page + 1,
+            pages,
+            perPage,
+            total,
+            list + other.list
+    )
 }
 
 data class Photo(
