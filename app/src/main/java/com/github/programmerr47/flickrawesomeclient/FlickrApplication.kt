@@ -1,6 +1,8 @@
 package com.github.programmerr47.flickrawesomeclient
 
 import android.app.Application
+import android.util.Log
+import com.google.gson.GsonBuilder
 import io.reactivex.schedulers.Schedulers.io
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -14,7 +16,9 @@ class FlickrApplication : Application() {
 
         val retrofit = Retrofit.Builder()
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(io()))
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(GsonBuilder()
+                        .registerTypeAdapter(Photo::class.java, PhotoDeserializer())
+                        .create()))
                 .baseUrl("https://api.flickr.com/services/rest/")
                 .client(OkHttpClient.Builder()
                         .addInterceptor {
@@ -31,10 +35,10 @@ class FlickrApplication : Application() {
                         .build())
                 .build()
 
-        api = retrofit.create(ServerApi::class.java)
+        api = retrofit.create(FlickrApi::class.java)
     }
 
     companion object {
-        lateinit var api: ServerApi
+        lateinit var api: FlickrApi
     }
 }
