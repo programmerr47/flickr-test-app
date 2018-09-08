@@ -36,9 +36,11 @@ class FlickrApplication : Application() {
                 .build()
 
         api = retrofit.create(FlickrApi::class.java)
+        flickrSearcher = FlickrSearcher(api, io())
     }
 
     companion object {
         lateinit var api: FlickrApi
+        lateinit var flickrSearcher: FlickrSearcher
     }
 }

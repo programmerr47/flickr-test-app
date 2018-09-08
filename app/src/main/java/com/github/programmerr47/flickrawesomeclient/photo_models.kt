@@ -17,7 +17,7 @@ import com.google.gson.annotations.SerializedName
  * That's why we have this useless wrapper :(
  */
 data class PhotoListResponse(
-        @SerializedName("photos") private val body: PhotoList
+        @SerializedName("photos") val body: PhotoList
 )
 
 data class PhotoList(

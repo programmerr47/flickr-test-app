@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="divider.thickness">1dp</dimen>
+    <dimen name="toolbar.shadow.height">2dp</dimen>
+    <dimen name="radius.corner">2dp</dimen>
+
+    <dimen name="padding.small">8dp</dimen>
+    <dimen name="padding.smallest">4dp</dimen>
+
+    <dimen name="shadow.btn">2dp</dimen>
+    <dimen name="shadow.btn.raised">4dp</dimen>
+
+    <dimen name="btn.min_height">32dp</dimen>
+
+    <dimen name="text.size">16sp</dimen>
+</resources>

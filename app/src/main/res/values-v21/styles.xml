@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="App.Divider.Toolbar">
+        <item name="android:layout_height">0dp</item>
+    </style>
+
+    <style name="App.Button.Rnd">
+        <item name="android:background">@drawable/btn_rnd_accent</item>
+        <item name="android:elevation">@dimen/shadow.btn</item>
+        <item name="android:minHeight">@dimen/btn.min_height</item>
+        <item name="android:stateListAnimator">@animator/anim_lift_on_touch</item>
+        <item name="android:textSize">@dimen/text.size</item>
+    </style>
+
+</resources>
