@@ -3,12 +3,20 @@ package com.github.programmerr47.flickrawesomeclient.util
 import android.animation.ObjectAnimator
 import android.animation.StateListAnimator
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Context
+import android.content.res.TypedArray
+import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentTransaction
+import android.support.v7.util.DiffUtil
+import android.support.v7.widget.RecyclerView
 import android.view.KeyEvent
 import android.view.KeyEvent.ACTION_DOWN
 import android.view.KeyEvent.KEYCODE_ENTER
+import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.TextView
 
@@ -34,3 +42,30 @@ fun EditText.setOnImeOptionsClickListener(listener: (TextView) -> Unit) = setOnE
 private fun KeyEvent?.isEnterPressed() = this?.let {
     action == ACTION_DOWN && keyCode == KEYCODE_ENTER
 } ?: false
+
+fun DiffUtil.Callback.calculateDiff() = DiffUtil.calculateDiff(this)
+
+fun <VH : RecyclerView.ViewHolder> RecyclerView.Adapter<VH>.dispatchUpdatesFrom(diffResult: DiffUtil.DiffResult) =
+        diffResult.dispatchUpdatesTo(this)
+
+inline fun <T: TypedArray> T.use(block: T.() -> Unit) {
+    try {
+        block()
+    } finally {
+        recycle()
+    }
+}
+
+fun View.inflater() = LayoutInflater.from(context)
+
+fun Fragment.hideKeyboard() = activity?.hideKeyboard()
+
+fun Activity.hideKeyboard() {
+    currentFocus?.run {
+        inputMethodManager.hideSoftInputFromWindow(currentFocus.windowToken, 0)
+        currentFocus.clearFocus()
+    }
+}
+
+val Context.inputMethodManager
+    get() = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager

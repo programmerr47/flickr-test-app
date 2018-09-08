@@ -13,4 +13,5 @@
     <dimen name="btn.min_height">32dp</dimen>
 
     <dimen name="text.size">16sp</dimen>
+    <dimen name="text.size.small">14sp</dimen>
 </resources>

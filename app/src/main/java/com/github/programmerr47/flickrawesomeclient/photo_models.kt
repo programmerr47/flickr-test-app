@@ -26,7 +26,9 @@ data class PhotoList(
         @SerializedName("perpage") val perPage: Int,
         val total: Int,
         @SerializedName("photo") val list: List<Photo>
-)
+) {
+    fun canTakeMore() = page < pages
+}
 
 data class Photo(
         val id: String,
@@ -38,4 +40,6 @@ data class Photo(
         val isPublic: Boolean,
         val isFriend: Boolean,
         val isFamily: Boolean
-)
+) {
+    fun generateUrl() = "https://farm$farmId.staticflickr.com/$serverId/${id}_$secret.jpg"
+}

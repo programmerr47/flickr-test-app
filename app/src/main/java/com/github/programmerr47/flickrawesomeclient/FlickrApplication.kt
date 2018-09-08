@@ -3,6 +3,7 @@ package com.github.programmerr47.flickrawesomeclient
 import android.app.Application
 import android.util.Log
 import com.google.gson.GsonBuilder
+import com.squareup.picasso.Picasso
 import io.reactivex.schedulers.Schedulers.io
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit

@@ -3,11 +3,13 @@
     <color name="primary">#3f51b5</color>
     <color name="primary_dark">#303f9f</color>
     <color name="accent">#ff4081</color>
-    <color name="accent_dark">#cc3367</color>
+    <color name="accent_dark">#99264d</color>
 
     <color name="t_primary">#de000000</color>
+    <color name="t_primary_dark">#ffffff</color>
     <color name="t_primary_disabled">#a9a9a9</color>
     <color name="t_secondary">#99000000</color>
+    <color name="t_veil">#88000000</color>
 
     <color name="divider">#ebebeb</color>
 
