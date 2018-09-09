@@ -19,6 +19,7 @@ import android.widget.ImageView
 import com.github.programmerr47.flickrawesomeclient.util.hideKeyboard
 import com.github.programmerr47.flickrawesomeclient.util.setOnImeOptionsClickListener
 import com.github.programmerr47.flickrawesomeclient.util.setStateListElevationAnimator
+import com.github.programmerr47.flickrawesomeclient.util.showKeyboard
 import com.github.programmerr47.flickrawesomeclient.util.sugar.textWatcher
 import com.github.salomonbrys.kodein.*
 import com.github.salomonbrys.kodein.android.SupportFragmentInjector
@@ -59,6 +60,8 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
                     searchViewModel.searchText = it.toString()
                 })
                 setOnImeOptionsClickListener { applySearch() }
+
+                if (searchViewModel.searchText.isEmpty()) showKeyboard()
             }
             findViewById<ImageView>(R.id.iv_search).setOnClickListener { applySearch() }
             swipeProgressView = findViewById<SwipeRefreshLayout>(R.id.srl_refresh).apply {

@@ -63,6 +63,13 @@ inline fun <T: TypedArray> T.use(block: T.() -> Unit) {
     }
 }
 
+fun View.showKeyboard() {
+    isFocusableInTouchMode = true
+    requestFocus()
+    val inputMethodManager = context.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+    inputMethodManager.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT)
+}
+
 fun View.inflater() = LayoutInflater.from(context)
 
 var View.visible: Boolean
