@@ -4,4 +4,9 @@
         <attr name="factor" format="float"/>
     </declare-styleable>
 
+    <declare-styleable name="FlingLayout">
+        <attr name="fl_canDrag" format="boolean"/>
+        <attr name="fl_canDismiss" format="boolean"/>
+    </declare-styleable>
+
 </resources>

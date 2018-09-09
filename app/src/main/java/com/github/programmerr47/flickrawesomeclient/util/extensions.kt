@@ -5,10 +5,14 @@ import android.animation.StateListAnimator
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.res.TypedArray
+import android.support.annotation.DrawableRes
+import android.support.annotation.IdRes
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentTransaction
+import android.support.v7.content.res.AppCompatResources
 import android.support.v7.util.DiffUtil
 import android.support.v7.widget.RecyclerView
 import android.view.KeyEvent
@@ -16,9 +20,12 @@ import android.view.KeyEvent.ACTION_DOWN
 import android.view.KeyEvent.KEYCODE_ENTER
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.TextView
+import kotlin.reflect.KClass
 
 fun FragmentManager.commitTransaction(block: FragmentTransaction.() -> Unit) =
         beginTransaction().apply(block).commit()
@@ -58,6 +65,10 @@ inline fun <T: TypedArray> T.use(block: T.() -> Unit) {
 
 fun View.inflater() = LayoutInflater.from(context)
 
+var View.visible: Boolean
+    get() = visibility == VISIBLE
+    set(value) { visibility = if (value) VISIBLE else GONE  }
+
 fun Fragment.hideKeyboard() = activity?.hideKeyboard()
 
 fun Activity.hideKeyboard() {
@@ -66,6 +77,18 @@ fun Activity.hideKeyboard() {
         currentFocus.clearFocus()
     }
 }
+
+fun Activity.finishNoAnim() {
+    finish()
+    overridePendingTransition(0, 0)
+}
+
+fun <T : View> Activity.bindable(@IdRes id: Int) = lazy { findViewById<T>(id) }
+
+fun Context.getDrawableCompat(@DrawableRes drawableRes: Int) = AppCompatResources.getDrawable(this, drawableRes)
+
+fun Context.startActivity(clazz: KClass<*>, intentFun: Intent.() -> Unit) =
+        startActivity(Intent(this, clazz.java).apply(intentFun))
 
 val Context.inputMethodManager
     get() = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager

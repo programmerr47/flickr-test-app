@@ -1,6 +1,8 @@
 package com.github.programmerr47.flickrawesomeclient
 
+import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
+import kotlinx.android.parcel.Parcelize
 
 /**
  * We need to add this silly class because of response for search list is not
@@ -38,6 +40,7 @@ data class PhotoList(
     )
 }
 
+@Parcelize
 data class Photo(
         val id: String,
         val ownerId: String,
@@ -48,6 +51,6 @@ data class Photo(
         val isPublic: Boolean,
         val isFriend: Boolean,
         val isFamily: Boolean
-) {
+) : Parcelable {
     fun generateUrl() = "https://farm$farmId.staticflickr.com/$serverId/${id}_$secret.jpg"
 }

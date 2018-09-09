@@ -1,11 +1,11 @@
 package com.github.programmerr47.flickrawesomeclient
 
-import android.support.v7.util.DiffUtil
 import android.support.v7.widget.RecyclerView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import com.github.programmerr47.flickrawesomeclient.gallery.GalleryActivity
 import com.github.programmerr47.flickrawesomeclient.util.calculateDiff
 import com.github.programmerr47.flickrawesomeclient.util.dispatchUpdatesFrom
 import com.github.programmerr47.flickrawesomeclient.util.inflater
@@ -37,6 +37,8 @@ class PhotoListAdapter(
 
         fun bind(photo: Photo) {
             titleView.text = photo.title
+            photoView.setOnClickListener { GalleryActivity.open(it.context, photo) }
+
             Picasso.get().load(photo.generateUrl())
                     .fit()
                     .centerCrop()
