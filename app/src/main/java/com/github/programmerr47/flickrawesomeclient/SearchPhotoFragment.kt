@@ -4,6 +4,7 @@ import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
 import android.support.v4.app.Fragment
+import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -18,6 +19,7 @@ import com.github.programmerr47.flickrawesomeclient.util.hideKeyboard
 import com.github.programmerr47.flickrawesomeclient.util.setOnImeOptionsClickListener
 import com.github.programmerr47.flickrawesomeclient.util.setStateListElevationAnimator
 import com.github.programmerr47.flickrawesomeclient.util.sugar.textWatcher
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
 import io.reactivex.disposables.Disposable
 
@@ -28,6 +30,7 @@ class SearchPhotoFragment : Fragment() {
 
     private var searchView: EditText? = null
     private var listAdapter: PhotoListAdapter? = null
+    private var swipeProgressView: SwipeRefreshLayout? = null
 
     private var searchDisposable: Disposable? = null
 
@@ -48,6 +51,9 @@ class SearchPhotoFragment : Fragment() {
                 setOnImeOptionsClickListener { applySearch() }
             }
             findViewById<ImageView>(R.id.iv_search).setOnClickListener { applySearch() }
+            swipeProgressView = findViewById<SwipeRefreshLayout>(R.id.srl_refresh).apply {
+                setOnRefreshListener { refreshSearch() }
+            }
             findViewById<RecyclerView>(R.id.rv_list).run {
                 layoutManager = GridLayoutManager(context, 3)
                 adapter = PhotoListAdapter().also { listAdapter = it }
@@ -59,15 +65,7 @@ class SearchPhotoFragment : Fragment() {
 
                         Log.v("FUCK", "visible = $visibleCount, total = $totalCount, firstPos = $firstVisiblePos")
                         if (visibleCount + firstVisiblePos >= totalCount && searchDisposable?.isDisposed != false) {
-                            searchDisposable = flickrSearcher.searchMorePhotos(searchViewModel.searchText).subscribe(
-                                    {
-                                        Log.v("FUCK", "onSuccess $it")
-                                        searchViewModel.searchResult = it
-                                        listAdapter?.update(it.list)
-                                    },
-                                    { Log.v("FUCK", "onError $it") },
-                                    { Log.v("FUCK", "onFinish") }
-                            )
+                            searchDisposable = applySearch(FlickrSearcher::searchMorePhotos)
                         }
                     }
                 })
@@ -79,28 +77,38 @@ class SearchPhotoFragment : Fragment() {
         super.onActivityCreated(savedInstanceState)
         searchViewModel = ViewModelProviders.of(activity!!).get(SearchViewModel::class.java)
         searchView?.setText(searchViewModel.searchText)
+        searchViewModel.searchResult?.let { listAdapter?.update(it.list) }
     }
 
     override fun onDestroyView() {
+        swipeProgressView = null
         listAdapter = null
         searchView = null
         super.onDestroyView()
     }
 
-    private fun applySearch() = applySearch(searchViewModel.searchText)
+    private fun applySearch() = applySearch(FlickrSearcher::searchPhotos)
+    private fun refreshSearch() = applySearch(FlickrSearcher::searchForce)
 
-    private fun applySearch(text: String) {
+    private inline fun applySearch(searchFun: FlickrSearcher.(String) -> Single<PhotoList>) =
+            applySearch(searchViewModel.searchText, searchFun)
+
+    private inline fun applySearch(text: String, searchFun: FlickrSearcher.(String) -> Single<PhotoList>): Disposable {
         hideKeyboard()
-        flickrSearcher.searchPhotos(text)
+        swipeProgressView?.isRefreshing = true
+        return flickrSearcher.searchFun(text)
                 .observeOn(mainThread())
                 .subscribe(
                         {
                             Log.v("FUCK", "onSuccess $it")
                             searchViewModel.searchResult = it
                             listAdapter?.update(it.list)
+                            swipeProgressView?.isRefreshing = false
                         },
-                        { Log.v("FUCK", "onError $it") },
-                        { Log.v("FUCK", "onFinish") }
+                        {
+                            Log.v("FUCK", "onError $it")
+                            swipeProgressView?.isRefreshing = false
+                        }
                 )
     }
 
