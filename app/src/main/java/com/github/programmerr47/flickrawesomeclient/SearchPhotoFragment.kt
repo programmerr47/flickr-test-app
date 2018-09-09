@@ -30,7 +30,7 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
     override val injector: KodeinInjector = KodeinInjector()
     override fun provideOverridingModule() = Kodein.Module {
         bind<SearchViewModel>() with provider {
-            ViewModelProviders.of(instance<AppCompatActivity>("Activity"))[SearchViewModel::class.java]
+            ViewModelProviders.of(instance<AppCompatActivity>("activity"))[SearchViewModel::class.java]
         }
     }
 
@@ -65,8 +65,13 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
                 setOnRefreshListener { refreshSearch() }
             }
             findViewById<RecyclerView>(R.id.rv_list).run {
-                layoutManager = GridLayoutManager(context, 3)
+                val spanCount = context.resources.getInteger(R.integer.page_search_column_count)
+                val gridPadding = context.resources.getDimensionPixelSize(R.dimen.padding_small)
+
+                layoutManager = GridLayoutManager(context, spanCount)
+                addItemDecoration(GridSpacingItemDecoration(spanCount, gridPadding))
                 adapter = PhotoListAdapter().also { listAdapter = it }
+
                 addOnScrollListener(object : RecyclerView.OnScrollListener() {
                     override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                         val visibleCount = recyclerView.layoutManager.childCount

@@ -17,7 +17,7 @@ import kotlinx.android.synthetic.main.activity_flow.*
 class FlowActivity : AppCompatActivity(), FragmentActivityInjector {
     override val injector: KodeinInjector = KodeinInjector()
     override fun provideOverridingModule() = Kodein.Module {
-        bind<AppCompatActivity>("Activity") with instance(this@FlowActivity)
+        bind<AppCompatActivity>("activity") with instance(this@FlowActivity)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
