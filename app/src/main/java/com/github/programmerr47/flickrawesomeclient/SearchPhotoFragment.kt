@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.support.design.widget.AppBarLayout
 import android.support.v4.app.Fragment
 import android.support.v4.widget.SwipeRefreshLayout
+import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -19,14 +20,22 @@ import com.github.programmerr47.flickrawesomeclient.util.hideKeyboard
 import com.github.programmerr47.flickrawesomeclient.util.setOnImeOptionsClickListener
 import com.github.programmerr47.flickrawesomeclient.util.setStateListElevationAnimator
 import com.github.programmerr47.flickrawesomeclient.util.sugar.textWatcher
+import com.github.salomonbrys.kodein.*
+import com.github.salomonbrys.kodein.android.SupportFragmentInjector
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
 import io.reactivex.disposables.Disposable
 
-class SearchPhotoFragment : Fragment() {
-    private val flickrSearcher: FlickrSearcher by lazy { FlickrApplication.flickrSearcher }
+class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
+    override val injector: KodeinInjector = KodeinInjector()
+    override fun provideOverridingModule() = Kodein.Module {
+        bind<SearchViewModel>() with provider {
+            ViewModelProviders.of(instance<AppCompatActivity>("Activity"))[SearchViewModel::class.java]
+        }
+    }
 
-    private lateinit var searchViewModel: SearchViewModel
+    private val flickrSearcher: FlickrSearcher by injector.instance()
+    private val searchViewModel: SearchViewModel by injector.instance()
 
     private var searchView: EditText? = null
     private var listAdapter: PhotoListAdapter? = null
@@ -35,6 +44,7 @@ class SearchPhotoFragment : Fragment() {
     private var searchDisposable: Disposable? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        initializeInjector()
         return inflater.inflate(R.layout.fragment_search_photo, container, false)
     }
 
@@ -75,7 +85,6 @@ class SearchPhotoFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        searchViewModel = ViewModelProviders.of(activity!!).get(SearchViewModel::class.java)
         searchView?.setText(searchViewModel.searchText)
         searchViewModel.searchResult?.let { listAdapter?.update(it.list) }
     }
@@ -84,6 +93,7 @@ class SearchPhotoFragment : Fragment() {
         swipeProgressView = null
         listAdapter = null
         searchView = null
+        destroyInjector()
         super.onDestroyView()
     }
 
