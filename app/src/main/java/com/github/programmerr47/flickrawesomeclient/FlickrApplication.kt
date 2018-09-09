@@ -1,6 +1,13 @@
 package com.github.programmerr47.flickrawesomeclient
 
 import android.app.Application
+import android.content.Context
+import com.github.programmerr47.flickrawesomeclient.models.Photo
+import com.github.programmerr47.flickrawesomeclient.net.FlickrApi
+import com.github.programmerr47.flickrawesomeclient.net.PhotoDeserializer
+import com.github.programmerr47.flickrawesomeclient.services.FlickrSearcher
+import com.github.programmerr47.flickrawesomeclient.util.sugar.addQueryParams
+import com.github.programmerr47.flickrawesomeclient.util.sugar.adjustRequestUrl
 import com.github.salomonbrys.kodein.*
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -23,6 +30,11 @@ class FlickrApplication : Application(), KodeinAware {
         bind<FlickrSearcher>() with singleton { FlickrSearcher(instance(), instance("ioScheduler")) }
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        appContext = this
+    }
+
     private fun createRetrofit() = Retrofit.Builder()
             .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(instance("ioScheduler")))
             .addConverterFactory(GsonConverterFactory.create(instance()))
@@ -39,14 +51,17 @@ class FlickrApplication : Application(), KodeinAware {
             .build()
 
     private fun createFlickInterceptor() = Interceptor {
-        var request = it.request()
-        request = request.newBuilder()
-                .url(request.url().newBuilder()
-                        .addQueryParameter("api_key", "41a3fd8458421cf8a4ae0f836014ef35")
-                        .addQueryParameter("format", "json")
-                        .addQueryParameter("nojsoncallback", "1")
-                        .build())
-                .build()
-        it.proceed(request)
+        val newRequest = it.adjustRequestUrl {
+            addQueryParams(
+                    "api_key" to "41a3fd8458421cf8a4ae0f836014ef35",
+                    "format" to "json",
+                    "nojsoncallback" to "1"
+            )
+        }
+        it.proceed(newRequest)
+    }
+
+    companion object {
+        lateinit var appContext: Context
     }
 }

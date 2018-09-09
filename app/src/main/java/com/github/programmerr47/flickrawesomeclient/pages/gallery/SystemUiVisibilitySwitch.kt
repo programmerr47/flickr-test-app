@@ -1,4 +1,4 @@
-package com.github.programmerr47.flickrawesomeclient.gallery
+package com.github.programmerr47.flickrawesomeclient.pages.gallery
 
 import android.view.View
 import io.reactivex.Observable
@@ -6,13 +6,9 @@ import io.reactivex.subjects.PublishSubject
 import java.lang.ref.WeakReference
 
 interface SystemUiVisibilitySwitch {
-
     fun isSystemUiVisible(): Boolean
-
     fun showSystemUi()
-
     fun hideSystemUi()
-
     fun observe(): Observable<Boolean>
 }
 

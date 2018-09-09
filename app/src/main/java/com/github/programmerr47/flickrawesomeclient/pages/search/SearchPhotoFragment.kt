@@ -1,4 +1,4 @@
-package com.github.programmerr47.flickrawesomeclient
+package com.github.programmerr47.flickrawesomeclient.pages.search
 
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
@@ -10,17 +10,17 @@ import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
-import com.github.programmerr47.flickrawesomeclient.util.hideKeyboard
-import com.github.programmerr47.flickrawesomeclient.util.setOnImeOptionsClickListener
-import com.github.programmerr47.flickrawesomeclient.util.setStateListElevationAnimator
-import com.github.programmerr47.flickrawesomeclient.util.showKeyboard
+import com.github.programmerr47.flickrawesomeclient.*
+import com.github.programmerr47.flickrawesomeclient.models.PhotoList
+import com.github.programmerr47.flickrawesomeclient.services.FlickrSearcher
+import com.github.programmerr47.flickrawesomeclient.util.*
 import com.github.programmerr47.flickrawesomeclient.util.sugar.textWatcher
+import com.github.programmerr47.flickrawesomeclient.widgets.lists.GridSpacingItemDecoration
 import com.github.salomonbrys.kodein.*
 import com.github.salomonbrys.kodein.android.SupportFragmentInjector
 import io.reactivex.Single
@@ -52,41 +52,18 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         view.run {
+            val toolbarShadowHeight = context.resources.getDimension(R.dimen.toolbar_shadow_height)
+
             findViewById<Toolbar>(R.id.toolbar).title = getString(R.string.page_search_title)
             findViewById<AppBarLayout>(R.id.appBarLayout)
-                    .setStateListElevationAnimator(getToolbarShadowHeight())
-            searchView = findViewById<EditText>(R.id.et_search).apply {
-                addTextChangedListener(textWatcher().after {
-                    searchViewModel.searchText = it.toString()
-                })
-                setOnImeOptionsClickListener { applySearch() }
+                    .setStateListElevationAnimator(toolbarShadowHeight)
 
-                if (searchViewModel.searchText.isEmpty()) showKeyboard()
-            }
             findViewById<ImageView>(R.id.iv_search).setOnClickListener { applySearch() }
+            findViewById<RecyclerView>(R.id.rv_list).init()
+
+            searchView = initSearchView(findViewById(R.id.et_search))
             swipeProgressView = findViewById<SwipeRefreshLayout>(R.id.srl_refresh).apply {
                 setOnRefreshListener { refreshSearch() }
-            }
-            findViewById<RecyclerView>(R.id.rv_list).run {
-                val spanCount = context.resources.getInteger(R.integer.page_search_column_count)
-                val gridPadding = context.resources.getDimensionPixelSize(R.dimen.padding_small)
-
-                layoutManager = GridLayoutManager(context, spanCount)
-                addItemDecoration(GridSpacingItemDecoration(spanCount, gridPadding))
-                adapter = PhotoListAdapter().also { listAdapter = it }
-
-                addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                    override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                        val visibleCount = recyclerView.layoutManager.childCount
-                        val totalCount = recyclerView.layoutManager.itemCount
-                        val firstVisiblePos = (recyclerView.layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition() ?: 0
-
-                        Log.v("FUCK", "visible = $visibleCount, total = $totalCount, firstPos = $firstVisiblePos")
-                        if (visibleCount + firstVisiblePos >= totalCount && searchDisposable?.isDisposed != false) {
-                            searchDisposable = applySearch(FlickrSearcher::searchMorePhotos)
-                        }
-                    }
-                })
             }
         }
     }
@@ -105,6 +82,38 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         super.onDestroyView()
     }
 
+    private fun initSearchView(editText: EditText) = editText.apply {
+        addTextChangedListener(textWatcher().after {
+            searchViewModel.searchText = it.toString()
+        })
+        setOnImeOptionsClickListener { applySearch() }
+
+        if (searchViewModel.searchText.isEmpty()) showKeyboard()
+    }
+
+    private fun RecyclerView.init() {
+        val spanCount = context.resources.getInteger(R.integer.page_search_column_count)
+        val gridPadding = context.resources.getDimensionPixelSize(R.dimen.padding_small)
+
+        layoutManager = GridLayoutManager(context, spanCount)
+        addItemDecoration(GridSpacingItemDecoration(spanCount, gridPadding))
+        adapter = PhotoListAdapter().also { listAdapter = it }
+
+        addOnScrollListener(createLoadMoreDetector())
+    }
+
+    private fun createLoadMoreDetector() = object : RecyclerView.OnScrollListener() {
+        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+            val visibleCount = recyclerView.layoutManager.childCount
+            val totalCount = recyclerView.layoutManager.itemCount
+            val firstVisiblePos = (recyclerView.layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition() ?: 0
+
+            if (visibleCount + firstVisiblePos >= totalCount && searchDisposable?.isDisposed != false) {
+                searchDisposable = applySearch(FlickrSearcher::searchMorePhotos)
+            }
+        }
+    }
+
     private fun applySearch() = applySearch(FlickrSearcher::searchPhotos)
     private fun refreshSearch() = applySearch(FlickrSearcher::searchForce)
 
@@ -116,20 +125,13 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         swipeProgressView?.isRefreshing = true
         return flickrSearcher.searchFun(text)
                 .observeOn(mainThread())
+                .doFinally { swipeProgressView?.isRefreshing = false }
                 .subscribe(
                         {
-                            Log.v("FUCK", "onSuccess $it")
                             searchViewModel.searchResult = it
                             listAdapter?.update(it.list)
-                            swipeProgressView?.isRefreshing = false
                         },
-                        {
-                            Log.v("FUCK", "onError $it")
-                            swipeProgressView?.isRefreshing = false
-                        }
+                        { showToast(it.localizedMessage) }
                 )
     }
-
-    private fun getToolbarShadowHeight() =
-            context?.resources?.getDimension(R.dimen.toolbar_shadow_height) ?: 0f
 }

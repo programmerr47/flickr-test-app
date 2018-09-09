@@ -21,7 +21,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".gallery.GalleryActivity"
+        <activity android:name="com.github.programmerr47.flickrawesomeclient.pages.gallery.GalleryActivity"
             android:theme="@style/App.Theme.Gallery"/>
 
     </application>

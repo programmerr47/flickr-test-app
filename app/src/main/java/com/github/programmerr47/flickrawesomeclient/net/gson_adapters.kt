@@ -1,5 +1,6 @@
-package com.github.programmerr47.flickrawesomeclient
+package com.github.programmerr47.flickrawesomeclient.net
 
+import com.github.programmerr47.flickrawesomeclient.models.Photo
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement

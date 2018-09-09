@@ -1,5 +1,6 @@
-package com.github.programmerr47.flickrawesomeclient
+package com.github.programmerr47.flickrawesomeclient.net
 
+import com.github.programmerr47.flickrawesomeclient.models.PhotoListResponse
 import io.reactivex.Single
 import retrofit2.http.GET
 import retrofit2.http.Query

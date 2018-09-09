@@ -1,4 +1,4 @@
-package com.github.programmerr47.flickrawesomeclient.gallery.widget
+package com.github.programmerr47.flickrawesomeclient.widgets
 
 import android.content.Context
 import android.support.v4.view.ViewPager

@@ -1,6 +1,8 @@
-package com.github.programmerr47.flickrawesomeclient
+package com.github.programmerr47.flickrawesomeclient.services
 
 import android.support.v4.util.LruCache
+import com.github.programmerr47.flickrawesomeclient.models.PhotoList
+import com.github.programmerr47.flickrawesomeclient.net.FlickrApi
 import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.SingleSource

@@ -1,9 +1,10 @@
-package com.github.programmerr47.flickrawesomeclient
+package com.github.programmerr47.flickrawesomeclient.widgets
 
 import android.content.Context
 import android.support.v7.widget.AppCompatImageView
 import android.util.AttributeSet
 import android.view.View
+import com.github.programmerr47.flickrawesomeclient.R
 import com.github.programmerr47.flickrawesomeclient.util.use
 
 const val RECTANGLE_VIEW_DEFAULT_FACTOR = 0.6f

@@ -1,4 +1,4 @@
-package com.github.programmerr47.flickrawesomeclient
+package com.github.programmerr47.flickrawesomeclient.widgets.lists
 
 import android.graphics.Rect
 import android.support.v7.widget.RecyclerView

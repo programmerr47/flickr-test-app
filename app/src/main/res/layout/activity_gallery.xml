@@ -9,7 +9,7 @@
     android:fitsSystemWindows="true"
     android:background="@android:color/black">
 
-    <com.github.programmerr47.flickrawesomeclient.gallery.widget.FlingLayout
+    <com.github.programmerr47.flickrawesomeclient.widgets.FlingLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/fl_photo_container"
         android:layout_width="match_parent"
@@ -20,7 +20,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
 
-    </com.github.programmerr47.flickrawesomeclient.gallery.widget.FlingLayout>
+    </com.github.programmerr47.flickrawesomeclient.widgets.FlingLayout>
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"

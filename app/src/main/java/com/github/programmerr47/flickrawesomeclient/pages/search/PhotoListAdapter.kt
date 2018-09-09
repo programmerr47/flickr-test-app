@@ -1,11 +1,16 @@
-package com.github.programmerr47.flickrawesomeclient
+package com.github.programmerr47.flickrawesomeclient.pages.search
 
 import android.support.v7.widget.RecyclerView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import com.github.programmerr47.flickrawesomeclient.gallery.GalleryActivity
+import com.github.programmerr47.flickrawesomeclient.widgets.lists.DiffCallbackFactory
+import com.github.programmerr47.flickrawesomeclient.models.Photo
+import com.github.programmerr47.flickrawesomeclient.R
+import com.github.programmerr47.flickrawesomeclient.widgets.lists.SimpleDiffCallback
+import com.github.programmerr47.flickrawesomeclient.pages.gallery.GalleryActivity
+import com.github.programmerr47.flickrawesomeclient.widgets.lists.BindRecyclerHolder
 import com.github.programmerr47.flickrawesomeclient.util.calculateDiff
 import com.github.programmerr47.flickrawesomeclient.util.dispatchUpdatesFrom
 import com.github.programmerr47.flickrawesomeclient.util.inflater
@@ -19,9 +24,8 @@ class PhotoListAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
             ViewHolder(parent.inflater().inflate(R.layout.item_photo, parent, false))
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(photoList[position])
-    }
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) =
+            holder.bind(photoList[position])
 
     override fun getItemCount() = photoList.size
 

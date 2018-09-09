@@ -1,4 +1,4 @@
-package com.github.programmerr47.flickrawesomeclient.gallery
+package com.github.programmerr47.flickrawesomeclient.pages.gallery
 
 import android.content.Context
 import android.graphics.Color
@@ -8,9 +8,9 @@ import android.support.v7.widget.Toolbar
 import android.view.MenuItem
 import android.view.View
 import com.github.chrisbanes.photoview.PhotoView
-import com.github.programmerr47.flickrawesomeclient.Photo
+import com.github.programmerr47.flickrawesomeclient.models.Photo
 import com.github.programmerr47.flickrawesomeclient.R
-import com.github.programmerr47.flickrawesomeclient.gallery.widget.FlingLayout
+import com.github.programmerr47.flickrawesomeclient.widgets.FlingLayout
 import com.github.programmerr47.flickrawesomeclient.util.*
 import com.squareup.picasso.Picasso
 import io.reactivex.disposables.Disposable
@@ -38,10 +38,8 @@ class GalleryActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         systemUiSwitchDisposable = systemUiSwitch.observe().subscribe { visible ->
-            if (visible) {
-                toolbar.revealSlide()
-            } else {
-                toolbar.fadeSlideUp()
+            toolbar.let {
+                if (visible) it.revealSlide() else it.fadeSlideUp()
             }
         }
         if (!systemUiSwitch.isSystemUiVisible()) {
@@ -76,7 +74,7 @@ class GalleryActivity : AppCompatActivity() {
     private fun initPhotoView(photoContainer: FlingLayout, photoView: PhotoView, photo: Photo) {
         photoContainer.run {
             dismissListener = { finishNoAnim() }
-            positionChangeListener = { _, _, factor -> changeContentTranparency(factor) }
+            positionChangeListener = { _, _, factor -> changeContentTransparency(factor) }
         }
 
         photoView.run {
@@ -93,7 +91,7 @@ class GalleryActivity : AppCompatActivity() {
         }
     }
 
-    private fun changeContentTranparency(factor: Float) {
+    private fun changeContentTransparency(factor: Float) {
         rootView.setBackgroundColor(Color.argb(Math.round(255 * (1f - factor)), 0, 0, 0))
         toolbar.alpha = 1f - factor * 3
     }

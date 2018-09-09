@@ -1,4 +1,4 @@
-package com.github.programmerr47.flickrawesomeclient
+package com.github.programmerr47.flickrawesomeclient.models
 
 import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
