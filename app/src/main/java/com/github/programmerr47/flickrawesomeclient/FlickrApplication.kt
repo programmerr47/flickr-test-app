@@ -1,11 +1,14 @@
 package com.github.programmerr47.flickrawesomeclient
 
 import android.app.Application
+import android.arch.persistence.room.Room
 import android.content.Context
+import com.github.programmerr47.flickrawesomeclient.db.AppDatabase
 import com.github.programmerr47.flickrawesomeclient.models.Photo
 import com.github.programmerr47.flickrawesomeclient.net.FlickrApi
 import com.github.programmerr47.flickrawesomeclient.net.PhotoDeserializer
 import com.github.programmerr47.flickrawesomeclient.services.FlickrSearcher
+import com.github.programmerr47.flickrawesomeclient.services.RecentSearchesService
 import com.github.programmerr47.flickrawesomeclient.util.sugar.addQueryParams
 import com.github.programmerr47.flickrawesomeclient.util.sugar.adjustRequestUrl
 import com.github.salomonbrys.kodein.*
@@ -24,10 +27,17 @@ class FlickrApplication : Application(), KodeinAware {
         bind<Interceptor>("flickrInterceptor") with singleton { createFlickInterceptor() }
         bind<OkHttpClient>() with singleton { createOkHttpClient() }
         bind<Gson>() with singleton { createGson() }
-        bind<Scheduler>("ioScheduler") with singleton { io() }
         bind<Retrofit>() with singleton { createRetrofit() }
+
+        bind<Scheduler>("ioScheduler") with singleton { io() }
+
         bind<FlickrApi>() with singleton { instance<Retrofit>().create(FlickrApi::class.java) }
         bind<FlickrSearcher>() with singleton { FlickrSearcher(instance(), instance("ioScheduler")) }
+
+        bind<AppDatabase>() with singleton { createDb(instance()) }
+        bind<RecentSearchesService>() with singleton {
+            RecentSearchesService(instance<AppDatabase>().recentSearchDao())
+        }
     }
 
     override fun onCreate() {
@@ -60,6 +70,9 @@ class FlickrApplication : Application(), KodeinAware {
         }
         it.proceed(newRequest)
     }
+
+    private fun createDb(context: Context) =
+            Room.databaseBuilder(context, AppDatabase::class.java, "app_db").build()
 
     companion object {
         lateinit var appContext: Context

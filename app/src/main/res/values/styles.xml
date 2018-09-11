@@ -26,7 +26,7 @@
 
     <style name="App.Button.Rnd">
         <item name="android:background">@drawable/btn_rnd_accent</item>
-        <item name="android:minHeight">@dimen/btn.min_height</item>
+        <item name="android:minHeight">@dimen/btn.min_height.small</item>
         <item name="android:textSize">@dimen/text.size</item>
     </style>
 

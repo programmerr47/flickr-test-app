@@ -99,8 +99,6 @@ class GalleryActivity : AppCompatActivity() {
     companion object {
         private const val EXTRA_PHOTO = "EXTRA_PHOTOS"
 
-        @JvmStatic
-        @JvmOverloads
         fun open(context: Context, photo: Photo) = context.startActivity(GalleryActivity::class) {
             putExtra(EXTRA_PHOTO, photo)
         }

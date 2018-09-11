@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/white"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:minHeight="@dimen/btn.min_height"
+    android:paddingStart="@dimen/padding.small"
+    android:paddingTop="@dimen/padding.smallest"
+    android:paddingEnd="@dimen/padding.small"
+    android:paddingBottom="@dimen/padding.smallest"
+    android:textColor="@color/t_primary"
+    android:textSize="@dimen/text.size"
+    tools:text="Test"/>

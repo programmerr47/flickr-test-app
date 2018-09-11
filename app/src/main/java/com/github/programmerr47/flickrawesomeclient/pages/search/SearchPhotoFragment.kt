@@ -13,8 +13,10 @@ import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.ImageView
+import android.widget.TextView
 import com.github.programmerr47.flickrawesomeclient.*
 import com.github.programmerr47.flickrawesomeclient.models.PhotoList
 import com.github.programmerr47.flickrawesomeclient.services.FlickrSearcher
@@ -33,16 +35,21 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         bind<SearchViewModel>() with provider {
             ViewModelProviders.of(instance<AppCompatActivity>("activity"))[SearchViewModel::class.java]
         }
+        bind<RecentSearchesTextWatcher>() with provider {
+            RecentSearchesTextWatcher(instance(), instance("ioScheduler"))
+        }
     }
 
     private val flickrSearcher: FlickrSearcher by injector.instance()
     private val searchViewModel: SearchViewModel by injector.instance()
+    private val recentSearchesTextWatcher: RecentSearchesTextWatcher by injector.instance()
 
-    private var searchView: EditText? = null
+    private var searchView: AutoCompleteTextView? = null
     private var listAdapter: PhotoListAdapter? = null
     private var swipeProgressView: SwipeRefreshLayout? = null
 
     private var searchDisposable: Disposable? = null
+    private var recentsDisposable: Disposable? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         initializeInjector()
@@ -58,14 +65,25 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
             findViewById<AppBarLayout>(R.id.appBarLayout)
                     .setStateListElevationAnimator(toolbarShadowHeight)
 
-            findViewById<ImageView>(R.id.iv_search).setOnClickListener { applySearch() }
+            findViewById<ImageView>(R.id.iv_search).setOnClickListener { searchByClick() }
             findViewById<RecyclerView>(R.id.rv_list).init()
 
-            searchView = initSearchView(findViewById(R.id.et_search))
+            searchView = initSearchView(findViewById(R.id.actv_search))
             swipeProgressView = findViewById<SwipeRefreshLayout>(R.id.srl_refresh).apply {
                 setOnRefreshListener { refreshSearch() }
             }
         }
+
+        recentsDisposable = recentSearchesTextWatcher.recentsObservable
+                .observeOn(mainThread())
+                .subscribe(
+                        { searchView?.run {
+                                val adapter = ArrayAdapter<String>(context, R.layout.item_dropdown_simple, it)
+                                setAdapter(adapter)
+                                adapter.notifyDataSetChanged()
+                        } },
+                        { searchView?.setAdapter(null) }
+                )
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -78,15 +96,22 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         swipeProgressView = null
         listAdapter = null
         searchView = null
+        recentsDisposable?.dispose()
+        searchDisposable?.dispose()
         destroyInjector()
         super.onDestroyView()
     }
 
-    private fun initSearchView(editText: EditText) = editText.apply {
-        addTextChangedListener(textWatcher().after {
-            searchViewModel.searchText = it.toString()
-        })
-        setOnImeOptionsClickListener { applySearch() }
+    private fun initSearchView(editText: AutoCompleteTextView) = editText.apply {
+        addTextChangedListeners(
+                textWatcher().after { searchViewModel.searchText = it.toString() },
+                recentSearchesTextWatcher
+        )
+        setOnImeOptionsClickListener { searchByClick() }
+        setOnItemClickListener { _, view, _, _ -> (view as? TextView)?.let {
+            editText.setText(it.text)
+            searchByClick()
+        } }
 
         if (searchViewModel.searchText.isEmpty()) showKeyboard()
     }
@@ -112,6 +137,12 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
                 searchDisposable = applySearch(FlickrSearcher::searchMorePhotos)
             }
         }
+    }
+
+    private fun searchByClick() {
+        searchView?.setAdapter(null)
+        recentSearchesTextWatcher.update(searchViewModel.searchText)
+        applySearch()
     }
 
     private fun applySearch() = applySearch(FlickrSearcher::searchPhotos)

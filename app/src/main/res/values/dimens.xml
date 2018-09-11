@@ -10,7 +10,8 @@
     <dimen name="shadow.btn">2dp</dimen>
     <dimen name="shadow.btn.raised">4dp</dimen>
 
-    <dimen name="btn.min_height">32dp</dimen>
+    <dimen name="btn.min_height">48dp</dimen>
+    <dimen name="btn.min_height.small">32dp</dimen>
 
     <dimen name="text.size">16sp</dimen>
     <dimen name="text.size.small">14sp</dimen>

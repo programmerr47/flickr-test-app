@@ -4,6 +4,7 @@ import android.animation.ObjectAnimator
 import android.animation.StateListAnimator
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.text.TextWatcher
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -34,6 +35,9 @@ fun View.setStateListElevationAnimator(elevation: Float) {
         this.stateListAnimator = stateListAnimator
     }
 }
+
+fun EditText.addTextChangedListeners(vararg watchers: TextWatcher) =
+        watchers.forEach { addTextChangedListener(it) }
 
 fun EditText.setOnImeOptionsClickListener(listener: (TextView) -> Unit) = setOnEditorActionListener { v, actionId, event ->
     if (actionId == this@setOnImeOptionsClickListener.imeOptions || event.isEnterPressed()) {
