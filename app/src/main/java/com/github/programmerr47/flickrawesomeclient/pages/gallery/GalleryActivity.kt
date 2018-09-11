@@ -1,38 +1,66 @@
 package com.github.programmerr47.flickrawesomeclient.pages.gallery
 
+import android.arch.lifecycle.ViewModel
+import android.arch.lifecycle.ViewModelProvider
+import android.arch.lifecycle.ViewModelProviders
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
+import android.support.v4.view.ViewPager
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.view.MenuItem
 import android.view.View
-import com.github.chrisbanes.photoview.PhotoView
+import com.github.chrisbanes.photoview.OnViewTapListener
 import com.github.programmerr47.flickrawesomeclient.models.Photo
 import com.github.programmerr47.flickrawesomeclient.R
-import com.github.programmerr47.flickrawesomeclient.widgets.FlingLayout
+import com.github.programmerr47.flickrawesomeclient.services.FlickrSearcher
 import com.github.programmerr47.flickrawesomeclient.util.*
-import com.squareup.picasso.Picasso
+import com.github.programmerr47.flickrawesomeclient.util.sugar.onPageChangeListener
+import com.github.salomonbrys.kodein.*
+import com.github.salomonbrys.kodein.android.AppCompatActivityInjector
+import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
 import io.reactivex.disposables.Disposable
 
-class GalleryActivity : AppCompatActivity() {
+class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
+    override val injector: KodeinInjector = KodeinInjector()
+    override fun provideOverridingModule() = Kodein.Module {
+        bind<GalleryViewModel>() with provider {
+            ViewModelProviders.of(this@GalleryActivity,
+                    object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return GalleryViewModel().apply {
+                                searchText = intent.extras.getString(EXTRA_SEARCH_QUERY)
+                                currentPosition = intent.extras.getInt(EXTRA_POSITION)
+                            } as T
+                        }
+                    })[GalleryViewModel::class.java]
+        }
+    }
+
+    private val flickrSearcher: FlickrSearcher by instance()
+    private val galleryViewModel: GalleryViewModel by instance()
     private lateinit var systemUiSwitch: SystemUiVisibilitySwitch
-    private lateinit var photo: Photo
 
     private val toolbar: Toolbar by bindable(R.id.toolbar)
     private val rootView: View by bindable(R.id.fl_root)
+    private val viewPager: ViewPager by bindable(R.id.vp_list)
 
     private var systemUiSwitchDisposable: Disposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery)
+        initializeInjector()
 
-        photo = (savedInstanceState ?: intent.extras).getParcelable(EXTRA_PHOTO)
         systemUiSwitch = DefaultSystemUiSwitch(window.decorView)
 
         initToolbar(toolbar)
-        initPhotoView(findViewById(R.id.fl_photo_container), findViewById(R.id.pv_photo), photo)
+        flickrSearcher.searchPhotos(galleryViewModel.searchText)
+                .observeOn(mainThread())
+                .subscribe { photoList ->
+                    initViewPager(viewPager, photoList.list, galleryViewModel.currentPosition)
+                }
     }
 
     override fun onStart() {
@@ -55,6 +83,11 @@ class GalleryActivity : AppCompatActivity() {
         super.onStop()
     }
 
+    override fun onDestroy() {
+        destroyInjector()
+        super.onDestroy()
+    }
+
     override fun onOptionsItemSelected(item: MenuItem?) = when (item?.itemId) {
         android.R.id.home -> {
             onBackPressed()
@@ -64,31 +97,28 @@ class GalleryActivity : AppCompatActivity() {
     }
 
     private fun initToolbar(toolbar: Toolbar) {
-        toolbar.title = photo.title
-
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeAsUpIndicator(getDrawableCompat(R.drawable.ic_toolbar_back))
     }
 
-    private fun initPhotoView(photoContainer: FlingLayout, photoView: PhotoView, photo: Photo) {
-        photoContainer.run {
-            dismissListener = { finishNoAnim() }
-            positionChangeListener = { _, _, factor -> changeContentTransparency(factor) }
-        }
-
-        photoView.run {
-            setOnScaleChangeListener { factor, _, _ -> photoContainer.isDragEnabled = factor <= 1.5f }
-            setOnViewTapListener { _, _, _ ->
-                systemUiSwitch.run {
+    private fun initViewPager(viewPager: ViewPager, photos: List<Photo>, position: Int) = viewPager.run {
+        adapter = FullSizePhotoAdapter(photos,
+                OnViewTapListener { _, _, _ ->
+                    systemUiSwitch.run {
                     if (isSystemUiVisible()) hideSystemUi() else showSystemUi()
-                }
-            }
-            Picasso.get().load(photo.generateUrl())
-                    .fit()
-                    .centerInside()
-                    .into(this)
-        }
+                    }
+                },
+                { finishNoAnim() },
+                { _, _, factor -> changeContentTransparency(factor) })
+
+        currentItem = position
+
+        viewPager.addOnPageChangeListener(onPageChangeListener()
+                .scrolled { position, _, _ ->
+                    galleryViewModel.currentPosition = position
+                    title = photos[position].title
+                })
     }
 
     private fun changeContentTransparency(factor: Float) {
@@ -97,10 +127,12 @@ class GalleryActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val EXTRA_PHOTO = "EXTRA_PHOTOS"
+        private const val EXTRA_SEARCH_QUERY = "EXTRA_SEARCH_QUERY"
+        private const val EXTRA_POSITION = "EXTRA_POSITION"
 
-        fun open(context: Context, photo: Photo) = context.startActivity(GalleryActivity::class) {
-            putExtra(EXTRA_PHOTO, photo)
+        fun open(context: Context, searchQuery: String, position: Int) = context.startActivity(GalleryActivity::class) {
+            putExtra(EXTRA_SEARCH_QUERY, searchQuery)
+            putExtra(EXTRA_POSITION, position)
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.github.programmerr47.flickrawesomeclient.pages.search
 
+import android.content.Context
 import android.support.v7.widget.RecyclerView
 import android.view.View
 import android.view.ViewGroup
@@ -9,14 +10,16 @@ import com.github.programmerr47.flickrawesomeclient.widgets.lists.DiffCallbackFa
 import com.github.programmerr47.flickrawesomeclient.models.Photo
 import com.github.programmerr47.flickrawesomeclient.R
 import com.github.programmerr47.flickrawesomeclient.widgets.lists.SimpleDiffCallback
-import com.github.programmerr47.flickrawesomeclient.pages.gallery.GalleryActivity
 import com.github.programmerr47.flickrawesomeclient.widgets.lists.BindRecyclerHolder
 import com.github.programmerr47.flickrawesomeclient.util.calculateDiff
 import com.github.programmerr47.flickrawesomeclient.util.dispatchUpdatesFrom
 import com.github.programmerr47.flickrawesomeclient.util.inflater
 import com.squareup.picasso.Picasso
 
+typealias OnPhotoItemClickListener = (Context, Int) -> Unit
+
 class PhotoListAdapter(
+        private val onPhotoItemClickListener: OnPhotoItemClickListener,
         private val diffFactory: DiffCallbackFactory<Photo> = { o, n -> SimpleDiffCallback(o, n) }
 ) : RecyclerView.Adapter<PhotoListAdapter.ViewHolder>() {
     private var photoList: List<Photo> = emptyList()
@@ -24,8 +27,19 @@ class PhotoListAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
             ViewHolder(parent.inflater().inflate(R.layout.item_photo, parent, false))
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) =
-            holder.bind(photoList[position])
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val photo = photoList[position]
+        holder.run {
+            titleView.text = photo.title
+            photoView.setOnClickListener { onPhotoItemClickListener(it.context, position) }
+
+            Picasso.get().load(photo.generateUrl())
+                    .fit()
+                    .centerCrop()
+                    .placeholder(R.drawable.photo_placeholder)
+                    .into(photoView)
+        }
+    }
 
     override fun getItemCount() = photoList.size
 
@@ -36,18 +50,7 @@ class PhotoListAdapter(
     }
 
     class ViewHolder(itemView: View) : BindRecyclerHolder(itemView) {
-        private val titleView = bind<TextView>(R.id.tv_title)
-        private val photoView = bind<ImageView>(R.id.riv_photo)
-
-        fun bind(photo: Photo) {
-            titleView.text = photo.title
-            photoView.setOnClickListener { GalleryActivity.open(it.context, photo) }
-
-            Picasso.get().load(photo.generateUrl())
-                    .fit()
-                    .centerCrop()
-                    .placeholder(R.drawable.photo_placeholder)
-                    .into(photoView)
-        }
+        val titleView = bind<TextView>(R.id.tv_title)
+        val photoView = bind<ImageView>(R.id.riv_photo)
     }
 }

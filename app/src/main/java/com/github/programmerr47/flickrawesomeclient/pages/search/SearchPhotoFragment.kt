@@ -19,6 +19,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.github.programmerr47.flickrawesomeclient.*
 import com.github.programmerr47.flickrawesomeclient.models.PhotoList
+import com.github.programmerr47.flickrawesomeclient.pages.gallery.GalleryActivity
 import com.github.programmerr47.flickrawesomeclient.services.FlickrSearcher
 import com.github.programmerr47.flickrawesomeclient.util.*
 import com.github.programmerr47.flickrawesomeclient.util.sugar.textWatcher
@@ -40,9 +41,9 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         }
     }
 
-    private val flickrSearcher: FlickrSearcher by injector.instance()
-    private val searchViewModel: SearchViewModel by injector.instance()
-    private val recentSearchesTextWatcher: RecentSearchesTextWatcher by injector.instance()
+    private val flickrSearcher: FlickrSearcher by instance()
+    private val searchViewModel: SearchViewModel by instance()
+    private val recentSearchesTextWatcher: RecentSearchesTextWatcher by instance()
 
     private var searchView: AutoCompleteTextView? = null
     private var listAdapter: PhotoListAdapter? = null
@@ -90,6 +91,11 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         super.onActivityCreated(savedInstanceState)
         searchView?.setText(searchViewModel.searchText)
         searchViewModel.searchResult?.let { listAdapter?.update(it.list) }
+
+        if (searchViewModel.searchText.isNotEmpty() &&
+                (listAdapter?.itemCount ?: 0) == 0) {
+            applySearch()
+        }
     }
 
     override fun onDestroyView() {
@@ -122,7 +128,9 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
 
         layoutManager = GridLayoutManager(context, spanCount)
         addItemDecoration(GridSpacingItemDecoration(spanCount, gridPadding))
-        adapter = PhotoListAdapter().also { listAdapter = it }
+        adapter = PhotoListAdapter({ context, pos ->
+            GalleryActivity.open(context, searchViewModel.searchText, pos)
+        }).also { listAdapter = it }
 
         addOnScrollListener(createLoadMoreDetector())
     }
