@@ -3,6 +3,8 @@ package com.github.programmerr47.flickrawesomeclient.pages.search
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
+import android.support.design.widget.Snackbar
+import android.support.design.widget.Snackbar.LENGTH_INDEFINITE
 import android.support.v4.app.Fragment
 import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.app.AppCompatActivity
@@ -13,10 +15,7 @@ import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
-import android.widget.ImageView
-import android.widget.TextView
+import android.widget.*
 import com.github.programmerr47.flickrawesomeclient.*
 import com.github.programmerr47.flickrawesomeclient.FlickrApplication.Companion.appContext
 import com.github.programmerr47.flickrawesomeclient.models.PhotoList
@@ -176,6 +175,10 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
                         {
                             searchViewModel.searchResult = it
                             listAdapter?.update(it.list)
+
+                            if (it.list.isEmpty()) {
+                                searchView?.let { showEmptyListSnackBar(it) }
+                            }
                         },
                         {
                             if (!isNetworkAvailable(appContext)) {
@@ -185,5 +188,16 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
                             }
                         }
                 )
+    }
+
+    private fun showEmptyListSnackBar(searchView: EditText) {
+        Snackbar.make(searchView, R.string.page_search_no_elements, LENGTH_INDEFINITE)
+                .setAction(R.string.action_repeat) {
+                    searchView.run {
+                        setText("")
+                        showKeyboard()
+                    }
+                }
+                .show()
     }
 }

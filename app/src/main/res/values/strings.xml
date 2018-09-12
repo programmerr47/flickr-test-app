@@ -3,6 +3,9 @@
 
     <string name="page.search.title">Flickr Поиск</string>
     <string name="page.search.hint">Введите описание картинки</string>
+    <string name="page.search.no_elements">Нет фотографий по такому запросу</string>
 
     <string name="error.no_connection">Нет интернет соединения</string>
+
+    <string name="action.repeat">Повторить</string>
 </resources>
