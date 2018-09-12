@@ -18,9 +18,11 @@ import android.widget.AutoCompleteTextView
 import android.widget.ImageView
 import android.widget.TextView
 import com.github.programmerr47.flickrawesomeclient.*
+import com.github.programmerr47.flickrawesomeclient.FlickrApplication.Companion.appContext
 import com.github.programmerr47.flickrawesomeclient.models.PhotoList
 import com.github.programmerr47.flickrawesomeclient.pages.gallery.GalleryActivity
 import com.github.programmerr47.flickrawesomeclient.services.FlickrSearcher
+import com.github.programmerr47.flickrawesomeclient.services.RecentSearchSubject
 import com.github.programmerr47.flickrawesomeclient.util.*
 import com.github.programmerr47.flickrawesomeclient.util.sugar.textWatcher
 import com.github.programmerr47.flickrawesomeclient.widgets.lists.GridSpacingItemDecoration
@@ -36,14 +38,14 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         bind<SearchViewModel>() with provider {
             ViewModelProviders.of(instance<AppCompatActivity>("activity"))[SearchViewModel::class.java]
         }
-        bind<RecentSearchesTextWatcher>() with provider {
-            RecentSearchesTextWatcher(instance(), instance("ioScheduler"))
+        bind<RecentSearchSubject>() with provider {
+            RecentSearchSubject(instance(), instance("ioScheduler"), 300)
         }
     }
 
     private val flickrSearcher: FlickrSearcher by instance()
     private val searchViewModel: SearchViewModel by instance()
-    private val recentSearchesTextWatcher: RecentSearchesTextWatcher by instance()
+    private val recentSearchSubject: RecentSearchSubject by instance()
 
     private var searchView: AutoCompleteTextView? = null
     private var listAdapter: PhotoListAdapter? = null
@@ -75,7 +77,7 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
             }
         }
 
-        recentsDisposable = recentSearchesTextWatcher.recentsObservable
+        recentsDisposable = recentSearchSubject.recentsObservable
                 .observeOn(mainThread())
                 .subscribe(
                         { searchView?.run {
@@ -111,7 +113,7 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
     private fun initSearchView(editText: AutoCompleteTextView) = editText.apply {
         addTextChangedListeners(
                 textWatcher().after { searchViewModel.searchText = it.toString() },
-                recentSearchesTextWatcher
+                textWatcher().after { recentSearchSubject.accept(it.toString()) }
         )
         setOnImeOptionsClickListener { searchByClick() }
         setOnItemClickListener { _, view, _, _ -> (view as? TextView)?.let {
@@ -137,19 +139,21 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
 
     private fun createLoadMoreDetector() = object : RecyclerView.OnScrollListener() {
         override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-            val visibleCount = recyclerView.layoutManager.childCount
-            val totalCount = recyclerView.layoutManager.itemCount
-            val firstVisiblePos = (recyclerView.layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition() ?: 0
+            if (dy > 0) {
+                val visibleCount = recyclerView.layoutManager.childCount
+                val totalCount = recyclerView.layoutManager.itemCount
+                val firstVisiblePos = (recyclerView.layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition() ?: 0
 
-            if (visibleCount + firstVisiblePos >= totalCount && searchDisposable?.isDisposed != false) {
-                searchDisposable = applySearch(FlickrSearcher::searchMorePhotos)
+                if (visibleCount + firstVisiblePos >= totalCount && searchDisposable?.isDisposed != false) {
+                    searchDisposable = applySearch(FlickrSearcher::searchMorePhotos)
+                }
             }
         }
     }
 
     private fun searchByClick() {
         searchView?.setAdapter(null)
-        recentSearchesTextWatcher.update(searchViewModel.searchText)
+        recentSearchSubject.save(searchViewModel.searchText)
         applySearch()
     }
 
@@ -170,7 +174,13 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
                             searchViewModel.searchResult = it
                             listAdapter?.update(it.list)
                         },
-                        { showToast(it.localizedMessage) }
+                        {
+                            if (!isNetworkAvailable(appContext)) {
+                                showToast(R.string.error_no_connection)
+                            } else {
+                                showToast(it.localizedMessage)
+                            }
+                        }
                 )
     }
 }
