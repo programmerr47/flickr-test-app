@@ -34,11 +34,7 @@ class PhotoListAdapter(
             titleView.text = photo.title
             photoView.setOnClickListener { onPhotoItemClickListener(it.context, position) }
 
-            Log.v("FUCK", "holder.photo.width: ${holder.photoView.width}")
-            Log.v("FUCK", "holder.photo.height: ${holder.photoView.height}")
-            Log.v("FUCK", "holder.photo.mWidth: ${holder.photoView.measuredWidth}")
-            Log.v("FUCK", "holder.photo.mHeight: ${holder.photoView.measuredHeight}")
-            Picasso.get().load(photo.generateUrl())
+            Picasso.get().load(photo.generateThumbUrl())
                     .fit()
                     .centerCrop()
                     .placeholder(R.drawable.photo_placeholder)

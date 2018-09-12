@@ -53,4 +53,6 @@ data class Photo(
         val isFamily: Boolean
 ) : Parcelable {
     fun generateUrl() = "https://farm$farmId.staticflickr.com/$serverId/${id}_$secret.jpg"
+
+    fun generateThumbUrl() = "https://farm$farmId.staticflickr.com/$serverId/${id}_${secret}_q.jpg"
 }
