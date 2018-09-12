@@ -46,8 +46,6 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
     private val rootView: View by bindable(R.id.fl_root)
     private val viewPager: ViewPager by bindable(R.id.vp_list)
 
-    private var systemUiSwitchDisposable: Disposable? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery)
@@ -71,14 +69,6 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
         toolbar.let {
             if (visible) it.revealSlide() else it.fadeSlideUp()
         }
-    }
-
-    override fun onStop() {
-        if (systemUiSwitchDisposable?.isDisposed == false) {
-            systemUiSwitchDisposable?.dispose()
-            systemUiSwitchDisposable = null
-        }
-        super.onStop()
     }
 
     override fun onDestroy() {

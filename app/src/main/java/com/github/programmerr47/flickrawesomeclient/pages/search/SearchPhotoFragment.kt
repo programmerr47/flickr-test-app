@@ -9,7 +9,6 @@ import android.support.v4.app.Fragment
 import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.GridLayoutManager
-import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
@@ -43,17 +42,18 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
 
             RecentSearchSubject(instance(), instance("ioScheduler"), debounceMs)
         }
+        bind<LoadMoreDetector>() with provider { LoadMoreDetector() }
     }
 
     private val flickrSearcher: FlickrSearcher by instance()
     private val searchViewModel: SearchViewModel by instance()
     private val recentSearchSubject: RecentSearchSubject by instance()
+    private val loadMoreDetector: LoadMoreDetector by instance()
 
     private var searchView: AutoCompleteTextView? = null
     private var listAdapter: PhotoListAdapter? = null
     private var swipeProgressView: SwipeRefreshLayout? = null
 
-    private var searchDisposable: Disposable? = null
     private var recentsDisposable: Disposable? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -71,13 +71,15 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
                     .setStateListElevationAnimator(toolbarShadowHeight)
 
             findViewById<ImageView>(R.id.iv_search).setOnClickListener { searchByClick() }
-            findViewById<RecyclerView>(R.id.rv_list).init()
+            initList(findViewById(R.id.rv_list))
 
             searchView = initSearchView(findViewById(R.id.actv_search))
             swipeProgressView = findViewById<SwipeRefreshLayout>(R.id.srl_refresh).apply {
                 setOnRefreshListener { refreshSearch() }
             }
         }
+
+        loadMoreDetector.start { applySearch(FlickrSearcher::searchMorePhotos) }
 
         recentsDisposable = recentSearchSubject.recentsObservable
                 .observeOn(mainThread())
@@ -107,7 +109,7 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         listAdapter = null
         searchView = null
         recentsDisposable?.dispose()
-        searchDisposable?.dispose()
+        loadMoreDetector.stop()
         destroyInjector()
         super.onDestroyView()
     }
@@ -126,7 +128,7 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         if (searchViewModel.searchText.isEmpty()) showKeyboard()
     }
 
-    private fun RecyclerView.init() {
+    private fun initList(recyclerView: RecyclerView) = recyclerView.apply {
         val spanCount = context.resources.getInteger(R.integer.page_search_column_count)
         val gridPadding = context.resources.getDimensionPixelSize(R.dimen.padding_small)
 
@@ -136,21 +138,7 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
             GalleryActivity.open(context, searchViewModel.searchText, pos)
         }).also { listAdapter = it }
 
-        addOnScrollListener(createLoadMoreDetector())
-    }
-
-    private fun createLoadMoreDetector() = object : RecyclerView.OnScrollListener() {
-        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-            if (dy > 0) {
-                val visibleCount = recyclerView.layoutManager.childCount
-                val totalCount = recyclerView.layoutManager.itemCount
-                val firstVisiblePos = (recyclerView.layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition() ?: 0
-
-                if (visibleCount + firstVisiblePos >= totalCount && searchDisposable?.isDisposed != false) {
-                    searchDisposable = applySearch(FlickrSearcher::searchMorePhotos)
-                }
-            }
-        }
+        addOnScrollListener(loadMoreDetector)
     }
 
     private fun searchByClick() {
@@ -159,8 +147,8 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         applySearch()
     }
 
-    private fun applySearch() = applySearch(FlickrSearcher::searchPhotos)
-    private fun refreshSearch() = applySearch(FlickrSearcher::searchForce)
+    private fun applySearch() = loadMoreDetector.search { applySearch(FlickrSearcher::searchPhotos) }
+    private fun refreshSearch() = loadMoreDetector.search { applySearch(FlickrSearcher::searchForce) }
 
     private inline fun applySearch(searchFun: FlickrSearcher.(String) -> Single<PhotoList>) =
             applySearch(searchViewModel.searchText, searchFun)
