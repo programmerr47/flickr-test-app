@@ -26,7 +26,7 @@ interface RecentSearchDao {
     fun insert(recentSearch: RecentSearch)
 
     @Query("DELETE FROM recentsearch WHERE expirationMs < :timeMs")
-    fun clearAll(timeMs: Long)
+    fun clearExpired(timeMs: Long)
 }
 
 @Entity

@@ -138,7 +138,11 @@ class FlickrApplication : Application(), KodeinAware {
 
     private fun createRecentSearcher(context: Context): RecentSearcher {
         val expiresAfterD = context.resources.getInteger(R.integer.net_cache_expiration_days).toLong()
-        return RecentSearchService(instance<AppDatabase>().recentSearchDao(), DAYS.toMillis(expiresAfterD))
+        return RecentSearchService(instance<AppDatabase>().recentSearchDao(), DAYS.toMillis(expiresAfterD)).apply {
+            instance<Scheduler>("ioScheduler").scheduleDirect {
+                clean() //no sure it is right place to do that, but for the first solution is acceptable
+            }
+        }
     }
 
     companion object {

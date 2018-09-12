@@ -3,6 +3,7 @@ package com.github.programmerr47.flickrawesomeclient.widgets
 import android.content.Context
 import android.support.v4.view.ViewCompat
 import android.support.v4.widget.ViewDragHelper
+import android.support.v4.widget.ViewDragHelper.*
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -27,20 +28,29 @@ class FlingLayout @JvmOverloads constructor(
     var isDragEnabled = true
     var isDismissEnabled = true
     var positionChangeListener: PositionChangeListener? = null
-    var dismissListener: DismissListener? = null
 
-    private val threshold = 1500
+    var dismissListener: DismissListener? = null
+    var needToInvokeDismissListener: Boolean = false
+
+    private val threshold = 3000
     private var dragHelper: ViewDragHelper? = null
     private var defaultChildX: Int? = null
     private var defaultChildY: Int? = null
 
     init {
-        dragHelper = ViewDragHelper.create(this, 1f, object: ViewDragHelper.Callback() {
+        dragHelper = create(this, 1f, object: ViewDragHelper.Callback() {
             override fun tryCaptureView(child: View, pointerId: Int) = isDragEnabled && child.visible
 
             override fun getViewVerticalDragRange(child: View) = 1
 
             override fun clampViewPositionVertical(child: View, top: Int, dy: Int) = top
+
+            override fun onViewDragStateChanged(state: Int) {
+                if (state == STATE_IDLE && needToInvokeDismissListener) {
+                    needToInvokeDismissListener = false
+                    dismissListener?.invoke()
+                }
+            }
 
             override fun onViewPositionChanged(changedView: View, left: Int, top: Int, dx: Int, dy: Int) {
                 super.onViewPositionChanged(changedView, left, top, dx, dy)
@@ -109,6 +119,6 @@ class FlingLayout @JvmOverloads constructor(
         dragHelper?.smoothSlideViewTo(target, x, targetY)
         invalidate()
 
-        dismissListener?.invoke()
+        needToInvokeDismissListener = true
     }
 }
