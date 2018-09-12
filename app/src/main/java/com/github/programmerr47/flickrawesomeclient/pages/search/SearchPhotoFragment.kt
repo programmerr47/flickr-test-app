@@ -39,7 +39,10 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
             ViewModelProviders.of(instance<AppCompatActivity>("activity"))[SearchViewModel::class.java]
         }
         bind<RecentSearchSubject>() with provider {
-            RecentSearchSubject(instance(), instance("ioScheduler"), 300)
+            val debounceMs: Long = instance<AppCompatActivity>("activity").resources
+                    .getInteger(R.integer.recent_search_debounce_ms).toLong()
+
+            RecentSearchSubject(instance(), instance("ioScheduler"), debounceMs)
         }
     }
 
@@ -81,9 +84,9 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
                 .observeOn(mainThread())
                 .subscribe(
                         { searchView?.run {
-                                val adapter = ArrayAdapter<String>(context, R.layout.item_dropdown_simple, it)
-                                setAdapter(adapter)
-                                adapter.notifyDataSetChanged()
+                            val adapter = ArrayAdapter<String>(context, R.layout.item_dropdown_simple, it)
+                            setAdapter(adapter)
+                            adapter.notifyDataSetChanged()
                         } },
                         { searchView?.setAdapter(null) }
                 )

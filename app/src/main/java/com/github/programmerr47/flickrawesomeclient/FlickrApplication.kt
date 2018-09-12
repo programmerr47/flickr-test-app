@@ -26,7 +26,7 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.*
 
 //todo move to Kodein 5.2.0
 class FlickrApplication : Application(), KodeinAware {
@@ -48,9 +48,7 @@ class FlickrApplication : Application(), KodeinAware {
         bind<FlickrSearcher>() with singleton { FlickrSearcher(instance(), instance("ioScheduler")) }
 
         bind<AppDatabase>() with singleton { createDb(instance("appContext")) }
-        bind<RecentSearcher>() with singleton {
-            RecentSearchService(instance<AppDatabase>().recentSearchDao())
-        }
+        bind<RecentSearcher>() with singleton { createRecentSearcher(instance("appContext")) }
     }
 
     override fun onCreate() {
@@ -105,13 +103,13 @@ class FlickrApplication : Application(), KodeinAware {
     private fun createCachingInterceptor(context: Context) = Interceptor {
         val response = it.proceed(it.request())
         val cacheControl = if (isNetworkAvailable(context)) {
-            CacheControl.Builder().maxAge(60, TimeUnit.SECONDS).build() //todo to settings.xml
+            CacheControl.Builder().maxAge(60, SECONDS).build() //todo to settings.xml
         } else {
-            createStaleCacheControl()
+            createStaleCacheControl(context)
         }
 
         response.newBuilder()
-                .header(HEADER_CACHE, cacheControl.toString())
+                .header("Cache-Control", cacheControl.toString())
                 .build()
     }
 
@@ -119,16 +117,18 @@ class FlickrApplication : Application(), KodeinAware {
         var request = it.request()
 
         if (!isNetworkAvailable(context)) {
-            request = request.newBuilder().cacheControl(createStaleCacheControl()).build()
+            request = request.newBuilder().cacheControl(createStaleCacheControl(context)).build()
         }
 
         it.proceed(request)
     }
 
-    private fun createStaleCacheControl() = CacheControl.Builder().maxStale(28, TimeUnit.DAYS).build()
+    private fun createStaleCacheControl(context: Context) = CacheControl.Builder()
+            .maxStale(context.resources.getInteger(R.integer.net_cache_expiration_days), DAYS)
+            .build()
 
     private fun createCache(context: Context): Cache {
-        val cacheSize: Long = 10 * 1024 * 1024
+        val cacheSize: Long = context.resources.getInteger(R.integer.net_cache_size_mb).toLong()
         val cacheDir = File(context.cacheDir, "net_responses")
         return Cache(cacheDir, cacheSize)
     }
@@ -136,9 +136,21 @@ class FlickrApplication : Application(), KodeinAware {
     private fun createDb(context: Context) =
             Room.databaseBuilder(context, AppDatabase::class.java, "app_db").build()
 
-    companion object {
-        private const val HEADER_CACHE = "Cache-Control"
+    private fun createRecentSearcher(context: Context): RecentSearcher {
+        val expiresAfterD = context.resources.getInteger(R.integer.net_cache_expiration_days).toLong()
+        return RecentSearchService(instance<AppDatabase>().recentSearchDao(), DAYS.toMillis(expiresAfterD))
+    }
 
+    companion object {
+        /**
+         * I've used this little hack for providing handy methods `showToast`
+         * In the ideal way we need to (specifiacally for showToast) make extensions for context aware components,
+         * like View, Activity, Fragment and e.t.c so we will have appropriate context and moreover restrict access for that method
+         * For example, in custom class now we able to invoke showToast, but it is not quite right.
+         *
+         * But I've decided to remain that hack, since it is prototype-like application
+         * //todo need to remove it
+         */
         lateinit var appContext: Context
     }
 }

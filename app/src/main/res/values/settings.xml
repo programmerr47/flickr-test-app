@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <integer name="page.search.column_count">2</integer>
+
+    <!-- net layer -->
+    <integer name="net.cache.size_mb">10</integer>
+    <integer name="net.cache.expiration_days">5</integer>
+    <integer name="recent_search.debounce_ms">300</integer>
 </resources>

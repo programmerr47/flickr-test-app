@@ -15,12 +15,12 @@ interface RecentSearcher {
 
 class RecentSearchService(
         private val dao: RecentSearchDao,
-        private val timeProvider: TimeProvider = SystemTimeProvider,
-        private val expiresAfter: Long = TimeUnit.DAYS.toMillis(7)
+        private val expiresAfterMs: Long,
+        private val timeProvider: TimeProvider = SystemTimeProvider
 ) : RecentSearcher {
     override fun save(search: String) {
-        var expirationTimeMs = timeProvider.currentMs() + expiresAfter
-        if(expirationTimeMs < expiresAfter) expirationTimeMs = Long.MAX_VALUE
+        var expirationTimeMs = timeProvider.currentMs() + expiresAfterMs
+        if(expirationTimeMs < expiresAfterMs) expirationTimeMs = Long.MAX_VALUE
 
         dao.insert(RecentSearch(search, expirationTimeMs))
     }
@@ -30,20 +30,18 @@ class RecentSearchService(
                 val ms = timeProvider.currentMs()
                 it.filter { it.expirationMs > ms }.map { it.value }
             }
-
-    private fun String.isValidRecent() = length >= 3
 }
 
 class RecentSearchSubject(
         private val recentSearcher: RecentSearcher,
         private val ioScheduler: Scheduler,
-        private val defaultDebounce: Int
+        private val defaultDebounceMs: Long
 ) {
     private val recentSearchSubject = PublishRelay.create<String>()
 
     val recentsObservable: Observable<List<String>> by lazy {
         recentSearchSubject
-                .debounce(300, TimeUnit.MILLISECONDS)
+                .debounce(defaultDebounceMs, TimeUnit.MILLISECONDS)
                 .distinctUntilChanged()
                 .switchMapSingle {
                     if (it.isValidRecent()) recentSearcher.getFiltered(it)
