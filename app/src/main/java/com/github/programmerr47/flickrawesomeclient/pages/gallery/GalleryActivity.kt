@@ -40,7 +40,7 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
 
     private val flickrSearcher: FlickrSearcher by instance()
     private val galleryViewModel: GalleryViewModel by instance()
-    private lateinit var systemUiSwitch: SystemUiVisibilitySwitch
+    private val systemUiSwitch: UiSwitch = UiSwitch()
 
     private val toolbar: Toolbar by bindable(R.id.toolbar)
     private val rootView: View by bindable(R.id.fl_root)
@@ -53,8 +53,6 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
         setContentView(R.layout.activity_gallery)
         initializeInjector()
 
-        systemUiSwitch = DefaultSystemUiSwitch(window.decorView)
-
         initToolbar(toolbar)
         flickrSearcher.searchPhotos(galleryViewModel.searchText)
                 .observeOn(mainThread())
@@ -65,13 +63,13 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
 
     override fun onStart() {
         super.onStart()
-        systemUiSwitchDisposable = systemUiSwitch.observe().subscribe { visible ->
-            toolbar.let {
-                if (visible) it.revealSlide() else it.fadeSlideUp()
-            }
-        }
-        if (!systemUiSwitch.isSystemUiVisible()) {
-            systemUiSwitch.hideSystemUi()
+        systemUiSwitch.setOnUiStateChangeListener(this::updateUiVisibility)
+        updateUiVisibility(systemUiSwitch.isUiVisible)
+    }
+
+    private fun updateUiVisibility(visible: Boolean) {
+        toolbar.let {
+            if (visible) it.revealSlide() else it.fadeSlideUp()
         }
     }
 
@@ -105,9 +103,7 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
     private fun initViewPager(viewPager: ViewPager, photos: List<Photo>, position: Int) = viewPager.run {
         adapter = FullSizePhotoAdapter(photos,
                 OnViewTapListener { _, _, _ ->
-                    systemUiSwitch.run {
-                    if (isSystemUiVisible()) hideSystemUi() else showSystemUi()
-                    }
+                    systemUiSwitch.run { isUiVisible = !isUiVisible }
                 },
                 { finishNoAnim() },
                 { _, _, factor -> changeContentTransparency(factor) })
