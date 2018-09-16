@@ -1,8 +1,11 @@
 package com.github.programmerr47.flickrawesomeclient
 
 import android.app.Application
+import android.arch.paging.PagedList
 import android.arch.persistence.room.Room
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.github.programmerr47.flickrawesomeclient.db.AppDatabase
 import com.github.programmerr47.flickrawesomeclient.models.Photo
 import com.github.programmerr47.flickrawesomeclient.net.FlickrApi
@@ -17,7 +20,7 @@ import com.github.salomonbrys.kodein.*
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import io.reactivex.Scheduler
-import io.reactivex.schedulers.Schedulers.io
+import io.reactivex.schedulers.Schedulers
 import okhttp3.Cache
 import okhttp3.CacheControl
 import okhttp3.Interceptor
@@ -26,6 +29,8 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.*
 
 //todo move to Kodein 5.2.0
@@ -42,18 +47,29 @@ class FlickrApplication : Application(), KodeinAware {
         bind<Gson>() with singleton { createGson() }
         bind<Retrofit>() with singleton { createRetrofit() }
 
-        bind<Scheduler>("ioScheduler") with singleton { io() }
+        bind<Executor>("uiExecutor") with singleton { createUiExecutor() }
+        bind<Executor>("ioExecutor") with singleton { createIoExecutor(instance("appContext")) }
+        bind<Scheduler>("ioScheduler") with singleton { Schedulers.from(instance("ioExecutor")) }
 
         bind<FlickrApi>() with singleton { instance<Retrofit>().create(FlickrApi::class.java) }
-        bind<FlickrSearcher>() with singleton { FlickrSearcher(instance(), instance("ioScheduler")) }
 
         bind<AppDatabase>() with singleton { createDb(instance("appContext")) }
         bind<RecentSearcher>() with singleton { createRecentSearcher(instance("appContext")) }
-    }
 
-    override fun onCreate() {
-        super.onCreate()
-        appContext = this
+        bind<PagedList.Config>("searchListConfig") with provider {
+            val defPerPage = instance<Context>().resources.getInteger(R.integer.query_search_photos_per_page)
+            PagedList.Config.Builder()
+                    .setEnablePlaceholders(true)
+                    .setPageSize(defPerPage)
+                    .build()
+        }
+        bind<FlickrSearcher>() with singleton { FlickrSearcher(
+                instance(),
+                instance("searchListConfig"),
+                instance("ioExecutor"),
+                instance("ioScheduler"),
+                instance("uiExecutor")
+        ) }
     }
 
     private fun createRetrofit() = Retrofit.Builder()
@@ -102,7 +118,7 @@ class FlickrApplication : Application(), KodeinAware {
      */
     private fun createCachingInterceptor(context: Context) = Interceptor {
         val response = it.proceed(it.request())
-        val cacheControl = if (isNetworkAvailable(context)) {
+        val cacheControl = if (context.isNetworkAvailable) {
             CacheControl.Builder().maxAge(60, SECONDS).build() //todo to settings.xml
         } else {
             createStaleCacheControl(context)
@@ -116,7 +132,7 @@ class FlickrApplication : Application(), KodeinAware {
     private fun createOfflineCachingInterceptor(context: Context) = Interceptor {
         var request = it.request()
 
-        if (!isNetworkAvailable(context)) {
+        if (!context.isNetworkAvailable) {
             request = request.newBuilder().cacheControl(createStaleCacheControl(context)).build()
         }
 
@@ -145,16 +161,13 @@ class FlickrApplication : Application(), KodeinAware {
         }
     }
 
-    companion object {
-        /**
-         * I've used this little hack for providing handy methods `showToast`
-         * In the ideal way we need to (specifiacally for showToast) make extensions for context aware components,
-         * like View, Activity, Fragment and e.t.c so we will have appropriate context and moreover restrict access for that method
-         * For example, in custom class now we able to invoke showToast, but it is not quite right.
-         *
-         * But I've decided to remain that hack, since it is prototype-like application
-         * //todo need to remove it
-         */
-        lateinit var appContext: Context
+    private fun createIoExecutor(context: Context): Executor {
+        val threadCount = context.resources.getInteger(R.integer.thread_io_count)
+        return Executors.newFixedThreadPool(threadCount)
+    }
+
+    private fun createUiExecutor(): Executor {
+        val uiHandler = Handler(Looper.getMainLooper())
+        return Executor { uiHandler.post(it) }
     }
 }

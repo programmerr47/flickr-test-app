@@ -3,6 +3,7 @@ package com.github.programmerr47.flickrawesomeclient.pages.gallery
 import android.arch.lifecycle.ViewModel
 import android.arch.lifecycle.ViewModelProvider
 import android.arch.lifecycle.ViewModelProviders
+import android.arch.paging.PagedList
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
@@ -20,7 +21,6 @@ import com.github.programmerr47.flickrawesomeclient.util.sugar.onPageChangeListe
 import com.github.salomonbrys.kodein.*
 import com.github.salomonbrys.kodein.android.AppCompatActivityInjector
 import io.reactivex.android.schedulers.AndroidSchedulers.mainThread
-import io.reactivex.disposables.Disposable
 
 class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
     override val injector: KodeinInjector = KodeinInjector()
@@ -54,8 +54,8 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
         initToolbar(toolbar)
         flickrSearcher.searchPhotos(galleryViewModel.searchText)
                 .observeOn(mainThread())
-                .subscribe { photoList ->
-                    initViewPager(viewPager, photoList.list, galleryViewModel.currentPosition)
+                .subscribe { pagedList ->
+                    initViewPager(viewPager, pagedList, galleryViewModel.currentPosition)
                 }
     }
 
@@ -90,7 +90,7 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
         supportActionBar?.setHomeAsUpIndicator(getDrawableCompat(R.drawable.ic_toolbar_back))
     }
 
-    private fun initViewPager(viewPager: ViewPager, photos: List<Photo>, position: Int) = viewPager.run {
+    private fun initViewPager(viewPager: ViewPager, photos: PagedList<Photo>, position: Int) = viewPager.run {
         adapter = FullSizePhotoAdapter(photos,
                 OnViewTapListener { _, _, _ ->
                     systemUiSwitch.run { isUiVisible = !isUiVisible }
@@ -103,7 +103,7 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
         viewPager.addOnPageChangeListener(onPageChangeListener()
                 .scrolled { position, _, _ ->
                     galleryViewModel.currentPosition = position
-                    title = photos[position].title
+                    title = photos[position]?.title ?: viewPager.context.getString(R.string.status_photo_loading)
                 })
     }
 

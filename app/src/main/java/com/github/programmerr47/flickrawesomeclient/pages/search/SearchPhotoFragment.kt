@@ -1,6 +1,7 @@
 package com.github.programmerr47.flickrawesomeclient.pages.search
 
 import android.arch.lifecycle.ViewModelProviders
+import android.arch.paging.PagedList
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
 import android.support.design.widget.Snackbar
@@ -16,9 +17,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import com.github.programmerr47.flickrawesomeclient.*
-import com.github.programmerr47.flickrawesomeclient.FlickrApplication.Companion.appContext
-import com.github.programmerr47.flickrawesomeclient.models.PhotoList
+import com.github.programmerr47.flickrawesomeclient.models.Photo
 import com.github.programmerr47.flickrawesomeclient.pages.gallery.GalleryActivity
+import com.github.programmerr47.flickrawesomeclient.pages.handleCommonError
 import com.github.programmerr47.flickrawesomeclient.services.FlickrSearcher
 import com.github.programmerr47.flickrawesomeclient.services.RecentSearchSubject
 import com.github.programmerr47.flickrawesomeclient.util.*
@@ -42,13 +43,11 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
 
             RecentSearchSubject(instance(), instance("ioScheduler"), debounceMs)
         }
-        bind<LoadMoreDetector>() with provider { LoadMoreDetector() }
     }
 
     private val flickrSearcher: FlickrSearcher by instance()
     private val searchViewModel: SearchViewModel by instance()
     private val recentSearchSubject: RecentSearchSubject by instance()
-    private val loadMoreDetector: LoadMoreDetector by instance()
 
     private var searchView: AutoCompleteTextView? = null
     private var listAdapter: PhotoListAdapter? = null
@@ -79,8 +78,6 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
             }
         }
 
-        loadMoreDetector.start { applySearch(FlickrSearcher::searchMorePhotos) }
-
         recentsDisposable = recentSearchSubject.recentsObservable
                 .observeOn(mainThread())
                 .subscribe(
@@ -96,27 +93,29 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         searchView?.setText(searchViewModel.searchText)
-        searchViewModel.searchResult?.let { listAdapter?.update(it.list) }
 
-        if (searchViewModel.searchText.isNotEmpty() &&
-                (listAdapter?.itemCount ?: 0) == 0) {
+        swipeProgressView?.isEnabled = searchViewModel.searchText.isNotEmpty()
+        if (searchViewModel.searchText.isNotEmpty()) {
             applySearch()
         }
     }
 
     override fun onDestroyView() {
         swipeProgressView = null
+        listAdapter?.submitList(null)
         listAdapter = null
         searchView = null
         recentsDisposable?.dispose()
-        loadMoreDetector.stop()
         destroyInjector()
         super.onDestroyView()
     }
 
     private fun initSearchView(editText: AutoCompleteTextView) = editText.apply {
         addTextChangedListeners(
-                textWatcher().after { searchViewModel.searchText = it.toString() },
+                textWatcher().after {
+                    searchViewModel.searchText = it.toString()
+                    swipeProgressView?.isEnabled = searchViewModel.searchText.isNotEmpty()
+                },
                 textWatcher().after { recentSearchSubject.accept(it.toString()) }
         )
         setOnImeOptionsClickListener { searchByClick() }
@@ -137,8 +136,6 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         adapter = PhotoListAdapter({ context, pos ->
             GalleryActivity.open(context, searchViewModel.searchText, pos)
         }).also { listAdapter = it }
-
-        addOnScrollListener(loadMoreDetector)
     }
 
     private fun searchByClick() {
@@ -147,13 +144,13 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
         applySearch()
     }
 
-    private fun applySearch() = loadMoreDetector.search { applySearch(FlickrSearcher::searchPhotos) }
-    private fun refreshSearch() = loadMoreDetector.search { applySearch(FlickrSearcher::searchForce) }
+    private fun applySearch() = applySearchFun(FlickrSearcher::searchPhotos)
+    private fun refreshSearch() = applySearchFun(FlickrSearcher::searchForce)
 
-    private inline fun applySearch(searchFun: FlickrSearcher.(String) -> Single<PhotoList>) =
-            applySearch(searchViewModel.searchText, searchFun)
+    private inline fun applySearchFun(searchFun: FlickrSearcher.(String) -> Single<PagedList<Photo>>) =
+            applySearchFun(searchViewModel.searchText, searchFun)
 
-    private inline fun applySearch(text: String, searchFun: FlickrSearcher.(String) -> Single<PhotoList>): Disposable {
+    private inline fun applySearchFun(text: String, searchFun: FlickrSearcher.(String) -> Single<PagedList<Photo>>): Disposable {
         hideKeyboard()
         swipeProgressView?.isRefreshing = true
         return flickrSearcher.searchFun(text)
@@ -162,18 +159,14 @@ class SearchPhotoFragment : Fragment(), SupportFragmentInjector {
                 .subscribe(
                         {
                             searchViewModel.searchResult = it
-                            listAdapter?.update(it.list)
+                            listAdapter?.submitList(it)
 
-                            if (it.list.isEmpty()) {
+                            if (it.isEmpty()) {
                                 searchView?.let { showEmptyListSnackBar(it) }
                             }
                         },
-                        {
-                            if (!isNetworkAvailable(appContext)) {
-                                showToast(R.string.error_no_connection)
-                            } else {
-                                showToast(it.localizedMessage)
-                            }
+                        { throwable ->
+                            context?.let { handleCommonError(it, throwable) }
                         }
                 )
     }

@@ -1,7 +1,9 @@
 package com.github.programmerr47.flickrawesomeclient.util
 
 import android.app.Activity
+import android.content.Context
 import android.support.annotation.IdRes
+import android.support.annotation.StringRes
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentTransaction

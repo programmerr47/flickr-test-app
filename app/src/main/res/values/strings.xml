@@ -5,7 +5,10 @@
     <string name="page.search.hint">Введите описание картинки</string>
     <string name="page.search.no_elements">Нет фотографий по такому запросу</string>
 
-    <string name="error.no_connection">Нет интернет соединения</string>
+    <string name="status.photo_loading">Загрузка</string>
+
+    <string name="error.no_connection">Нет интернет соединения. Проверьте подключение в настройках.</string>
+    <string name="error.unknown_host">Не удалось подключиться к серверу. Попробуйте позже.</string>
 
     <string name="action.repeat">Повторить</string>
 </resources>

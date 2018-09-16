@@ -2,8 +2,12 @@
 <resources>
     <integer name="page.search.column_count">2</integer>
 
+    <!-- parallelization -->
+    <integer name="thread.io.count">3</integer>
+
     <!-- net layer -->
     <integer name="net.cache.size_mb">10</integer>
     <integer name="net.cache.expiration_days">5</integer>
     <integer name="recent_search.debounce_ms">300</integer>
+    <integer name="query.search_photos.per_page">5</integer>
 </resources>

@@ -13,3 +13,8 @@ class SimpleDiffCallback<T>(
     override fun areItemsTheSame(oldPos: Int, newPos: Int) = old[oldPos] == new[newPos]
     override fun areContentsTheSame(oldPos: Int, newPos: Int) = old[oldPos] == new[newPos]
 }
+
+class SimpleItemDiffCallback<T> : DiffUtil.ItemCallback<T>() {
+    override fun areItemsTheSame(oldItem: T, newItem: T) = oldItem == newItem
+    override fun areContentsTheSame(oldItem: T, newItem: T) = oldItem == newItem
+}

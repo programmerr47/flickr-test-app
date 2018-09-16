@@ -1,5 +1,6 @@
 package com.github.programmerr47.flickrawesomeclient.pages.gallery
 
+import android.arch.paging.PagedList
 import android.support.v4.view.PagerAdapter
 import android.view.LayoutInflater
 import android.view.View
@@ -14,7 +15,7 @@ import com.github.programmerr47.flickrawesomeclient.widgets.PositionChangeListen
 import com.squareup.picasso.Picasso
 
 class FullSizePhotoAdapter(
-        val photos: List<Photo>,
+        val photos: PagedList<Photo>,
         val onViewTapListener: OnViewTapListener,
         val dismissListener: DismissListener = {},
         val positionChangeListener: PositionChangeListener = { _, _, _ -> }
@@ -32,13 +33,15 @@ class FullSizePhotoAdapter(
             this.positionChangeListener = this@FullSizePhotoAdapter.positionChangeListener
         }
 
+        photos.loadAround(position)
         root.findViewById<PhotoView>(R.id.pv_photo).run {
             setOnScaleChangeListener { scaleFactor, _, _ -> flRoot.isDragEnabled = scaleFactor <= 1.5f }
             setOnViewTapListener(onViewTapListener)
 
-            Picasso.get().load(photos[position].generateUrl())
+            Picasso.get().load(photos[position]?.generateUrl())
                     .fit()
                     .centerInside()
+                    .placeholder(R.drawable.photo_placeholder)
                     .into(this)
         }
         container.addView(root)
