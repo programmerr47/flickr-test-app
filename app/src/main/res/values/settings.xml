@@ -9,5 +9,5 @@
     <integer name="net.cache.size_mb">10</integer>
     <integer name="net.cache.expiration_days">5</integer>
     <integer name="recent_search.debounce_ms">300</integer>
-    <integer name="query.search_photos.per_page">5</integer>
+    <integer name="query.search_photos.per_page">20</integer>
 </resources>
