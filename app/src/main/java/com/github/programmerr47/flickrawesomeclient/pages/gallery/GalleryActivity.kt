@@ -45,6 +45,7 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
     private val toolbar: Toolbar by bindable(R.id.toolbar)
     private val rootView: View by bindable(R.id.fl_root)
     private val viewPager: ViewPager by bindable(R.id.vp_list)
+    private var adapter: FullSizePhotoAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,6 +73,7 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
     }
 
     override fun onDestroy() {
+        adapter?.submitList(null)
         destroyInjector()
         super.onDestroy()
     }
@@ -91,12 +93,16 @@ class GalleryActivity : AppCompatActivity(), AppCompatActivityInjector {
     }
 
     private fun initViewPager(viewPager: ViewPager, photos: PagedList<Photo>, position: Int) = viewPager.run {
-        adapter = FullSizePhotoAdapter(photos,
+        adapter = FullSizePhotoAdapter(
                 OnViewTapListener { _, _, _ ->
                     systemUiSwitch.run { isUiVisible = !isUiVisible }
                 },
                 { finishNoAnim() },
-                { _, _, factor -> changeContentTransparency(factor) })
+                { _, _, factor -> changeContentTransparency(factor) }
+        ).also {
+            this@GalleryActivity.adapter = it
+            it.submitList(photos)
+        }
 
         currentItem = position
 
